@@ -157,7 +157,7 @@ int main() {
                         axis_points.emplace_back(axis_length, 0, 0);         // X轴
                         axis_points.emplace_back(0, axis_length, 0);         // Y轴
                         axis_points.emplace_back(0, 0, -axis_length);        // Z轴（指向相机）
-
+                         
                         // 将3D点投影到2D图像平面
                         vector<Point2f> projected_points;
                         projectPoints(axis_points, rvec, tvec,
@@ -178,11 +178,6 @@ int main() {
                         putText(img, "X", x_axis, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 0, 255), 2);
                         putText(img, "Y", y_axis, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
                         putText(img, "Z", z_axis, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(255, 0, 0), 2);
-
-                        // 显示距离信息
-                        double distance = norm(tvec);  // 向量的模长
-                        putText(img, "Distance: " + to_string(distance).substr(0, 5) + "m",
-                            Point(10, 30), FONT_HERSHEY_SIMPLEX, 0.7, Scalar(255, 255, 255), 2);
 
                         rectangle_found = true;
                         break;  // 找到一个有效的矩形就跳出循环
