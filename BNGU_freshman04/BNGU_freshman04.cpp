@@ -3,6 +3,9 @@
 #include <algorithm>
 #include <cmath>
 
+#include <iostream>
+#include<opencv2/opencv.hpp>
+
 using namespace cv;
 using namespace std;
 
@@ -196,7 +199,7 @@ int main() {
         if (waitKey(1) == 'q') {
             break;
         }
-    }
+}
 
     capture.release();
     destroyAllWindows();
