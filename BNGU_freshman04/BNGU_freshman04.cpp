@@ -140,9 +140,7 @@ int main() {
                     for (int i = 0; i < 4; ++i) {
                         circle(img, Point((int)image_points[i].x, (int)image_points[i].y),
                             5, Scalar(255, 0, 0), -1);
-                        putText(img, to_string(i),
-                            Point((int)image_points[i].x, (int)image_points[i].y),
-                            FONT_HERSHEY_SIMPLEX, 0.7, Scalar(255, 255, 255), 2);
+                        
                     }
 
                     // 使用solvePnP估计姿态
