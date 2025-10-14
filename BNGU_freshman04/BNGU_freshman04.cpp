@@ -66,11 +66,16 @@ int main() {
     float height = 0.15;
 
     // 定义矩形在世界坐标系中的4个角点坐标（3D坐标）
-    vector<Point3f> object_points;
-    object_points.emplace_back(-width / 2, -height / 2, 0);  // 左下
-    object_points.emplace_back(width / 2, -height / 2, 0);   // 右下
-    object_points.emplace_back(width / 2, height / 2, 0);    // 右上
-    object_points.emplace_back(-width / 2, height / 2, 0);   // 左上
+    vector<Point3f> object_points = {
+        {-width/2, -height/2, 0},// 左下
+        {width / 2, -height / 2, 0},// 右下
+        {width / 2, height / 2, 0},// 右上
+        {-width / 2, height / 2, 0},// 左上
+    };
+      
+       
+       
+       
 
     Mat frame, gray, blurred, edges, img;
     while (true) {
@@ -152,12 +157,13 @@ int main() {
                     if (success) {
                         // 定义坐标系的3D点（在矩形中心）
                         float axis_length = min(width, height) / 2;
-                        vector<Point3f> axis_points;
-                        axis_points.emplace_back(0, 0, 0);                  // 原点
-                        axis_points.emplace_back(axis_length, 0, 0);         // X轴
-                        axis_points.emplace_back(0, axis_length, 0);         // Y轴
-                        axis_points.emplace_back(0, 0, -axis_length);        // Z轴（指向相机）
-                         
+                        vector<Point3f> axis_points{
+                            {0, 0, 0},                 // 原点
+                        {axis_length, 0, 0},       // X轴
+                        {0, axis_length, 0},         // Y轴
+                        {0, 0, axis_length},        // Z轴
+                        };
+
                         // 将3D点投影到2D图像平面
                         vector<Point2f> projected_points;
                         projectPoints(axis_points, rvec, tvec,
@@ -197,6 +203,6 @@ int main() {
 }
 
     capture.release();
-    destroyAllWindows();
+    cv::destroyAllWindows();
     return 0;
 }
