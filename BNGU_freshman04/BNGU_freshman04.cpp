@@ -2,9 +2,7 @@
 #include <cmath>
 #include <vector>
 #include <opencv2/opencv.hpp>
-
 #include <iostream>
-#include<opencv2/opencv.hpp>
 
 using namespace cv;
 using namespace std;
@@ -72,9 +70,6 @@ int main() {
         {width / 2, height / 2, 0},// 右上
         {-width / 2, height / 2, 0},// 左上
     };
-      
-       
-       
        
 
     Mat frame, gray, blurred, edges, img;
@@ -88,6 +83,7 @@ int main() {
 
         // 转换为灰度图像
         cvtColor(frame, gray, COLOR_BGR2GRAY);
+        
 
         // 预处理
         GaussianBlur(gray, blurred, Size(5, 5), 0);
