@@ -1,92 +1,122 @@
-﻿#include <algorithm>
-#include <cmath>
-#include <vector>
-#include <opencv2/opencv.hpp>
+﻿#include <opencv2/opencv.hpp>
 #include <iostream>
-
-using namespace cv;
+#include <vector>
+#include <algorithm>
 using namespace std;
+using namespace cv;
 
-// 对四个点进行排序：左下，右下，右上，左上
-vector<Point2f> orderPoints(const vector<Point2f>& pts) {
+
+/*
+ * @function name: orderPoints
+ * @作用：对四个点进行排序：左下，右下，右上，左上
+ * @pts: 输入的点的集合（无序的点）
+ * @return: 排列好的四个点的集合，如果不满足四个点的数量，返回原集合
+ */
+vector<Point2f> orderPoints(const vector<Point2f>& pts)
+{
     vector<Point2f> rect(4);
-    if (pts.size() != 4) return rect;
+
+    // 如果不满足点的数量，返回原集合
+    if (pts.size() != 4)
+    {
+        return rect;
+    }
 
     // 计算点的中心
     Point2f center(0, 0);
-    for (const auto& p : pts) {
-        center.x += p.x;
-        center.y += p.y;
+    for (auto pt : pts)
+    {
+        center.x += pt.x;
+        center.y += pt.y;
     }
     center.x /= 4;
     center.y /= 4;
 
     // 根据点相对于中心的位置进行分类
-    for (const auto& p : pts) {
-        if (p.x < center.x && p.y > center.y) {
-            rect[0] = p;  // 左下
+    for (auto pt : pts)
+    {
+        // 左下
+        if (pt.x < center.x && pt.y < center.y)
+        {
+            rect[0] = pt;
         }
-        else if (p.x > center.x && p.y > center.y) {
-            rect[1] = p;  // 右下
-        }
-        else if (p.x > center.x && p.y < center.y) {
-            rect[2] = p;  // 右上
-        }
-        else if (p.x < center.x && p.y < center.y) {
-            rect[3] = p;  // 左上
-        }
-    }
 
+        // 右下
+        if (pt.x > center.x && pt.y < center.y)
+        {
+            rect[1] = pt;
+        }
+
+        // 右上
+        if (pt.x > center.x && pt.y > center.y)
+        {
+            rect[2] = pt;
+        }
+
+        // 左上
+        if (pt.x < center.x && pt.y > center.y)
+        {
+            rect[3] = pt;
+        }
+
+
+    }
     return rect;
+
 }
 
-int main() {
+int main()
+{
     // 初始化摄像头
     VideoCapture capture(0);
-    if (!capture.isOpened()) {
+    if (!capture.isOpened())
+    {
         cerr << "无法打开摄像头" << endl;
         return -1;
     }
 
-    
-
     // 设置相机内参
-    Mat camera_matrix = (Mat_<float>(3, 3) <<
+    Mat cameraMatrix = (Mat_<double>(3, 3) <<
         1000, 0, 640,
         0, 1000, 360,
         0, 0, 1);
 
-    // 畸变系数（假设无畸变）
-    Mat dist_coeffs = Mat::zeros(4, 1, CV_32F);
+    // 畸变参数，假设没有畸变
+    Mat distCoeffs = Mat::zeros(4, 1, CV_32F);
 
-    // 定义目标矩形的实际物理尺寸（单位：米）
-    float width = 0.075;
-    float height = 0.15;
+    // 定义矩形的实际的物理尺寸（单位：米）
+    float width = 0.05;
+    float height = 0.025;
 
-    // 定义矩形在世界坐标系中的4个角点坐标（3D坐标）
-    vector<Point3f> object_points = {
-        {-width/2, -height/2, 0},// 左下
-        {width / 2, -height / 2, 0},// 右下
-        {width / 2, height / 2, 0},// 右上
-        {-width / 2, height / 2, 0},// 左上
+    // 定义矩形在世界坐标系终端四个角点坐标
+    vector<Point3f> objectPoints =
+    {
+    {-width / 2, -height / 2, 0},// 左下
+    {width / 2, -height / 2, 0}, // 右下
+    {width / 2, height / 2, 0},  // 右上
+    {-width / 2, height / 2, 0}, // 左上
     };
-       
 
     Mat frame, gray, blurred, edges, img;
-    while (true) {
-        // 读取摄像头帧
+    while (true)
+    {
+        // 读取摄像头的帧
         capture >> frame;
-        if (frame.empty()) {
-            cerr << "无法获取帧" << endl;
-            break;
+        if (frame.empty())
+        {
+            cerr << "无法读取视频帧" << endl;
+            return -1;
         }
 
-        // 转换为灰度图像
+        // 转化为灰度图像
         cvtColor(frame, gray, COLOR_BGR2GRAY);
-        
+
+        // 二值化处理
+        Mat binary;
+        threshold(gray, binary, 50, 255, THRESH_BINARY_INV | THRESH_OTSU);
 
         // 预处理
-        GaussianBlur(gray, blurred, Size(5, 5), 0);
+        GaussianBlur(binary, blurred, Size(5, 5), 0);
         Canny(blurred, edges, 50, 150);
 
         // 形态学操作，连接断开的边缘
@@ -94,11 +124,11 @@ int main() {
         morphologyEx(edges, edges, MORPH_CLOSE, kernel);
 
         // 查找轮廓
-        vector<vector<Point>> contours;
+        vector<vector<Point> > contours;
         findContours(edges, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
         img = frame.clone();
 
-        // 按面积排序，取最大的五个轮廓
+        // 按面积排序，选取最大的五个轮廓
         sort(contours.begin(), contours.end(),
             [](const vector<Point>& a, const vector<Point>& b) {
                 return contourArea(a) > contourArea(b);
@@ -107,85 +137,92 @@ int main() {
             contours.resize(5);
         }
 
-        // 初始化，标记是否找到目标矩形
-        bool rectangle_found = false;
 
-        for (const auto& contour : contours) {
+        for (const auto& contour : contours)
+        {
             // 计算轮廓周长
             double perimeter = arcLength(contour, true);
-            if (perimeter < 100) continue;  // 过滤过小的轮廓
+
+            // 过滤面积过小的轮廓
+            if (perimeter < 100)
+            {
+                continue;
+            }
 
             // 多边形拟合
             vector<Point> approx;
             approxPolyDP(contour, approx, 0.02 * perimeter, true);
 
-            // 如果是四边形且是凸边形
-            if (approx.size() == 4 && isContourConvex(approx)) {
-                // 计算面积，过滤太小的区域
+            // 如果四边形是凸四边形
+            if (approx.size() == 4 && isContourConvex(approx))
+            {
+                // 计算面积
                 double area = contourArea(approx);
-                if (area > 1000) {
-                    // 转换为Point2f类型
-                    vector<Point2f> approx_points;
-                    for (const auto& p : approx) {
-                        approx_points.emplace_back((float)p.x, (float)p.y);
+
+                // 过滤过小的面积
+                if (area > 1000)
+                {
+                    // 转化成point2f格式
+                    vector<Point2f> approxPoints;
+
+                    for (auto& pts : approx)
+                    {
+                        approxPoints.emplace_back((float)pts.x, (float)pts.y);
                     }
 
-                    // 对4个点排序，确保与世界坐标系的角点顺序一致
-                    vector<Point2f> image_points = orderPoints(approx_points);
+                    // 对四个点进行排序
+                    vector<Point2f> imagePoints = orderPoints(approxPoints);
 
                     // 绘制检测到的矩形
                     drawContours(img, vector<vector<Point>>{approx}, -1, Scalar(0, 255, 0), 3);
 
-                    // 标记四个角点（蓝色圆点）并编号（0-3）
-                    for (int i = 0; i < 4; ++i) {
-                        circle(img, Point((int)image_points[i].x, (int)image_points[i].y),
-                            5, Scalar(255, 0, 0), -1);
-                        
+                    // 标记四个圆角点
+                    for (auto& imagePoint : imagePoints)
+                    {
+                        circle(img, Point((int)imagePoint.x, (int)imagePoint.y), 5, Scalar(255, 0, 0), -1);
                     }
 
                     // 使用solvePnP估计姿态
                     Mat rvec, tvec;
-                    bool success = solvePnP(object_points, image_points,
-                        camera_matrix, dist_coeffs, rvec, tvec);
+                    bool success = solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec);
 
-                    if (success) {
-                        // 定义坐标系的3D点（在矩形中心）
-                        float axis_length = min(width, height) / 2;
-                        vector<Point3f> axis_points{
-                            {0, 0, 0},                 // 原点
-                        {axis_length, 0, 0},       // X轴
-                        {0, axis_length, 0},         // Y轴
-                        {0, 0, axis_length},        // Z轴
+                    if (success)
+                    {
+                        // 定义坐标系的3D点
+                        float axisLength = min(width, height) / 2;
+                        vector<Point3f> axisPoints{
+                            {0, 0, 0}, // 原点
+                            {axisLength * 2, 0, 0}, // x轴
+                            {0, -axisLength, 0},// y轴
+                            {0, 0, -axisLength} // z轴
                         };
 
-                        // 将3D点投影到2D图像平面
-                        vector<Point2f> projected_points;
-                        projectPoints(axis_points, rvec, tvec,
-                            camera_matrix, dist_coeffs, projected_points);
+                        // 将3D的点投影到2D的平面图像上
+                        vector<Point2f> project_points;
+                        projectPoints(axisPoints, rvec, tvec, cameraMatrix, distCoeffs, project_points);
 
                         // 提取投影后的点
-                        Point origin = projected_points[0];
-                        Point x_axis = projected_points[1];
-                        Point y_axis = projected_points[2];
-                        Point z_axis = projected_points[3];
+                        Point origin = project_points[0];
+                        Point x = project_points[1];
+                        Point y = project_points[2];
+                        Point z = project_points[3];
 
                         // 绘制坐标系
-                        arrowedLine(img, origin, x_axis, Scalar(0, 0, 255), 3);  // X轴 - 红色
-                        arrowedLine(img, origin, y_axis, Scalar(0, 255, 0), 3);  // Y轴 - 绿色
-                        arrowedLine(img, origin, z_axis, Scalar(255, 0, 0), 3);  // Z轴 - 蓝色
+                        arrowedLine(img, origin, x, Scalar(0, 0, 255), 3);  // X轴 - 红色
+                        arrowedLine(img, origin, y, Scalar(0, 255, 0), 3);  // y轴 - 绿色
+                        arrowedLine(img, origin, z, Scalar(255, 0, 0), 3);  // z轴 - 蓝色
 
                         // 添加标签
-                        putText(img, "X", x_axis, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 0, 255), 2);
-                        putText(img, "Y", y_axis, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);
-                        putText(img, "Z", z_axis, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(255, 0, 0), 2);
+                        putText(img, "X", x, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 0, 255), 2);  // X轴 - 红色
+                        putText(img, "Y", y, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 255, 0), 2);  // y轴 - 绿色
+                        putText(img, "Z", z, FONT_HERSHEY_SIMPLEX, 0.7, Scalar(255, 0, 0), 2);  // z轴 - 蓝色
 
-                        rectangle_found = true;
-                        break;  // 找到一个有效的矩形就跳出循环
+
+                        break;
                     }
                 }
             }
         }
-
         // 显示边缘图像（用于调试）
         imshow("Edges", edges);
         imshow("Result", img);
@@ -194,9 +231,9 @@ int main() {
         if (waitKey(1) == 'q') {
             break;
         }
-}
-
+    }
+    // 释放内存
     capture.release();
-    cv::destroyAllWindows();
+    destroyAllWindows();
     return 0;
 }
