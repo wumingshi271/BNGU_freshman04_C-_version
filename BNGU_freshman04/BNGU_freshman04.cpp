@@ -10,13 +10,13 @@ using namespace cv;
  * @function name: orderPoints
  * @作用：对四个点进行排序：左下，右下，右上，左上
  * @pts: 输入的点的集合（无序的点）
- * @return: 排列好的四个点的集合，如果不满足四个点的数量，返回原集合
+ * @return: 排列好的四个点的集合，如果不满足四个点的数量，返回空向量
  */
 vector<Point2f> orderPoints(const vector<Point2f>& pts)
 {
     vector<Point2f> rect(4);
 
-    // 如果不满足点的数量，返回原集合
+    // 如果不满足点的数量，返回空向量
     if (pts.size() != 4)
     {
         return rect;
